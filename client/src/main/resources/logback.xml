@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration>
+    <property name="logPath" value="./log" />
+    <property name="logFilename" value="root.log"/>
+    <property name="logFileMaxSize" value="2048KB"/>
+
+    <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+        <Target>System.out</Target>
+        <encoder>
+            <pattern>%p [%t] [%d] %n&lt;%m&gt;%n</pattern>
+        </encoder>
+    </appender>
+    <appender name="logfile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${logPath}/${logFilename}</File>
+        <append>true</append>
+        <encoder>
+            <pattern>%p [%t] [%d] %n&lt;%m&gt;%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <maxIndex>10</maxIndex>
+            <FileNamePattern>${logPath}/root.log.%i</FileNamePattern>
+        </rollingPolicy>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <MaxFileSize>${logFileMaxSize}</MaxFileSize>
+        </triggeringPolicy>
+    </appender>
+    <logger name="org.aopalliance" level="INFO"/>
+    <logger name="org.apache" level="INFO"/>
+    <logger name="org.springframework" level="INFO"/>
+    <root level="INFO">
+        <appender-ref ref="stdout"/>
+        <appender-ref ref="logfile"/>
+    </root>
+</configuration>

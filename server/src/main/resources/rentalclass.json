@@ -1,0 +1,7 @@
+[{"name":"Economy","rate":1.2},
+{"name":"Compact","rate":1.5},
+{"name":"Intermediate","rate":2},
+{"name":"Fullsize","rate":3},
+{"name":"SUV","rate":4.5},
+{"name":"Premium","rate":5},
+{"name":"Elite","rate":7}]
