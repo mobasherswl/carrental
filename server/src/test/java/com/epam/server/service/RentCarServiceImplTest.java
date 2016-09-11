@@ -177,7 +177,7 @@ public class RentCarServiceImplTest {
         rentCarList.add(rentCarNotWithinRange);
         when(rentCarRepository.findAll()).thenReturn(rentCarList);
         when(modelMapper.map(rentCarWithinRange, RentCarDto.class)).thenReturn(rentCarDtoWithinRange);
-        assertEquals(rentCarService.getRentHistory(LocalDate.now(clock), LocalDate.now(clock)).size(), 1L);
+        assertEquals(rentCarService.getRentHistoryDto(LocalDate.now(clock), LocalDate.now(clock)).size(), 1L);
         verify(rentCarRepository, times(1)).findAll();
         verify(modelMapper, times(1)).map(rentCarWithinRange, RentCarDto.class);
     }

@@ -5,6 +5,9 @@ import com.epam.common.dto.RentCarDto;
 import com.epam.common.service.RentCarService;
 import com.epam.server.model.Car;
 import com.epam.server.model.RentCar;
+import com.epam.server.model.RentalClass;
+import com.epam.server.rentcarstatistics.RentCarStatisticGenerator;
+import com.epam.server.rentcarstatistics.RentMinutesPerDay;
 import com.epam.server.repo.BaseRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -71,8 +75,20 @@ public class RentCarServiceImpl implements RentCarService {
     }
 
     @Override
-    public List<RentCarDto> getRentHistory(LocalDate fromLocalDate, LocalDate toLocalDate) {
-        return StreamSupport.stream(rentCarRepository.findAll().spliterator(), true).filter(
+    public RentCarDto rentCarReturn(RentCarDto rentCarDto) {
+        RentCar rentCar = rentCarRepository.findOne(rentCarDto.getId());
+        rentCar.setEndDateTime(LocalDateTime.now(clock));
+        rentCar.setCarRented(null);
+        return modelMapper.map(rentCarRepository.save(rentCar), RentCarDto.class);
+    }
+
+    @Override
+    public List<RentCarDto> getRentHistoryDto(LocalDate fromLocalDate, LocalDate toLocalDate) {
+        return getRentHistoryBetween(fromLocalDate, toLocalDate).stream().map(rentCar -> modelMapper.map(rentCar, RentCarDto.class)).collect(Collectors.toList());
+    }
+
+    private List<RentCar> getRentHistoryBetween(LocalDate fromLocalDate, LocalDate toLocalDate) {
+        return  StreamSupport.stream(rentCarRepository.findAll().spliterator(), true).filter(
                 rentCar ->
                         rentCar.getStartDateTime() != null
                                 && (rentCar.getStartDateTime().toLocalDate().compareTo(fromLocalDate) >= 0
@@ -80,16 +96,16 @@ public class RentCarServiceImpl implements RentCarService {
                                 && rentCar.getEndDateTime() != null
                                 && (rentCar.getEndDateTime().toLocalDate().compareTo(fromLocalDate) >= 0
                                 && rentCar.getEndDateTime().toLocalDate().compareTo(toLocalDate) <= 0))
-                .map(rentCar -> modelMapper.map(rentCar, RentCarDto.class))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public RentCarDto rentCarReturn(RentCarDto rentCarDto) {
-        RentCar rentCar = rentCarRepository.findOne(rentCarDto.getId());
-        rentCar.setEndDateTime(LocalDateTime.now(clock));
-        rentCar.setCarRented(null);
-        return modelMapper.map(rentCarRepository.save(rentCar), RentCarDto.class);
+    public String getRentHistoryStatistics(LocalDate fromLocalDate, LocalDate toLocalDate) {
+        RentCarStatisticGenerator rentCarStatisticGenerator = new RentCarStatisticGenerator();
+        List<RentCar> rentHistoryBetween = getRentHistoryBetween(fromLocalDate, toLocalDate);
+        HashMap<RentalClass, RentMinutesPerDay> mapWithRentalClassAndHoursOfRentForEachDay = rentCarStatisticGenerator.getMapWithRentalClassAndMinutesOfRentForEachDay(rentHistoryBetween);
+        RentMinutesPerDay mapWithTimeForEachDayBetweenPeriod = rentCarStatisticGenerator.getMapWithMinutesForEachDayBetweenPeriod(fromLocalDate, toLocalDate);
+        return rentCarStatisticGenerator.generateTableWithEarningsAndUtilizationByRentalClass(mapWithRentalClassAndHoursOfRentForEachDay, mapWithTimeForEachDayBetweenPeriod);
     }
 
 }

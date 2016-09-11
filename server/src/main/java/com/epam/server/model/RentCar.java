@@ -94,7 +94,7 @@ public class RentCar {
             return this;
         }
 
-        public RentCarBuilder setCarDto(Car car) {
+        public RentCarBuilder setCar(Car car) {
             rentCar.setCar(car);
             return this;
         }

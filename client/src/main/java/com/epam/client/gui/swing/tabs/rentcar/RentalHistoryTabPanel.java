@@ -123,7 +123,7 @@ public class RentalHistoryTabPanel extends JPanel {
         searchButton.setEnabled(false);
         LocalDate fromLocalDate = LocalDate.of(fromCalendar.get(Calendar.YEAR), fromCalendar.get(Calendar.MONTH) + 1, fromCalendar.get(Calendar.DATE));
         LocalDate toLocalDate = LocalDate.of(toCalendar.get(Calendar.YEAR), toCalendar.get(Calendar.MONTH) + 1, toCalendar.get(Calendar.DATE));
-        processor.execute(() -> rentCarService.getRentHistory(fromLocalDate, toLocalDate), carDtoList -> {
+        processor.execute(() -> rentCarService.getRentHistoryDto(fromLocalDate, toLocalDate), carDtoList -> {
             tableModel.setData(modelMapper.map(carDtoList, carTableRowType));
             searchButton.setEnabled(true);
         }, e -> {

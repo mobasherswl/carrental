@@ -37,6 +37,9 @@ public class MainWindow extends JFrame {
     private JPanel testConnectionTabPanel;
     @Resource(name = "rentalClassTabPanel")
     private JPanel rentalClassTabPanel;
+    @Resource(name = "rentalHistoryStatisticsTabPanel")
+    private JPanel rentalHistoryStatisticsTabPanel;
+
 
     @PostConstruct
     public void postConstruct() {
@@ -55,12 +58,14 @@ public class MainWindow extends JFrame {
     private JTabbedPane getTabbedPane() {
         JTabbedPane jTabbedPane = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.VERTICAL);
 
+        jTabbedPane.setTabLayoutPolicy(JTabbedPane.WRAP_TAB_LAYOUT);
         jTabbedPane.addTab("Customers", customerTabPanel);
         jTabbedPane.addTab("Rental Class", rentalClassTabPanel);
         jTabbedPane.add("Fleet", fleetTabPanel);
         jTabbedPane.add("Available Cars", rentCarTabPanel);
         jTabbedPane.add("Current Rentals", currentRentalsTabPanel);
         jTabbedPane.add("Rental History", rentalHistoryTabPanel);
+        jTabbedPane.add("Rental History Statistics", rentalHistoryStatisticsTabPanel );
         jTabbedPane.addTab("Other", testConnectionTabPanel);
 
         return jTabbedPane;

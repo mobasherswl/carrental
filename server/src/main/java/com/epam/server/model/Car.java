@@ -62,7 +62,7 @@ public class Car {
         this.rentalClass = rentalClass;
     }
 
-    public static final class CarBuilder {
+    public static class CarBuilder {
         private Car car;
 
         {
@@ -84,9 +84,15 @@ public class Car {
             return this;
         }
 
+        public CarBuilder setRentalClass(RentalClass rentalClass) {
+            car.setRentalClass(rentalClass);
+            return this;
+        }
+
         public Car build() {
             return car;
         }
+
     }
 
 }

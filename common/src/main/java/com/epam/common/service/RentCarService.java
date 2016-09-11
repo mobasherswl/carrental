@@ -17,7 +17,9 @@ public interface RentCarService {
 
     List<RentCarDto> findRentedOutCars();
 
-    List<RentCarDto> getRentHistory(LocalDate fromLocalDate, LocalDate toLocalDate);
+    List<RentCarDto> getRentHistoryDto(LocalDate fromLocalDate, LocalDate toLocalDate);
 
     RentCarDto rentCarReturn(RentCarDto rentCarDto);
+
+    String getRentHistoryStatistics(LocalDate fromLocalDate, LocalDate toLocalDate);
 }
