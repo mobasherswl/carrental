@@ -5,9 +5,12 @@ import com.epam.common.dto.RentCarDto;
 import com.epam.common.service.*;
 import com.epam.server.model.Car;
 import com.epam.server.model.RentCar;
+import com.epam.server.threadlocal.TenantIdThreadLocal;
+import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
+import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
+import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
+import org.hibernate.hikaricp.internal.HikariCPConnectionProvider;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.PropertyMap;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,15 +28,18 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 import javax.annotation.Resource;
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
+import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import static com.epam.common.constants.TenantConstants.TENANT_ID;
 import static org.modelmapper.config.Configuration.AccessLevel.PRIVATE;
 
 /**
@@ -42,8 +48,8 @@ import static org.modelmapper.config.Configuration.AccessLevel.PRIVATE;
 @Configuration
 @EnableJpaRepositories(basePackages = {"com.epam.server.repo"})
 @EnableTransactionManagement
-@ComponentScan(basePackages = {"com.epam.server.service"})
-@PropertySource("classpath:application.properties")
+@ComponentScan(basePackages = {"com.epam.server.service","com.epam.server.multitenancy"})
+@PropertySource({"classpath:application.properties", "hibernate.properties"})
 public class AppConfig {
 
     @Value("${server.port}")
@@ -76,6 +82,8 @@ public class AppConfig {
     @Lazy
     @Resource(name = "rentalClassServiceImpl")
     RentalClassService rentalClassService;
+    @Resource
+    Environment environment;
 
     @Bean
     public static PropertySourcesPlaceholderConfigurer properties() {
@@ -131,7 +139,13 @@ public class AppConfig {
     }
 
     private <T> SimpleHttpInvokerServiceExporter getSimpleHttpInvokerServiceExporter(Class<T> clazz, Object service) {
-        SimpleHttpInvokerServiceExporter simpleHttpInvokerServiceExporter = new SimpleHttpInvokerServiceExporter();
+        SimpleHttpInvokerServiceExporter simpleHttpInvokerServiceExporter = new SimpleHttpInvokerServiceExporter() {
+            @Override
+            public void handle(HttpExchange exchange) throws IOException {
+                TenantIdThreadLocal.getInstance().set(exchange.getRequestHeaders().getFirst(TENANT_ID));
+                super.handle(exchange);
+            }
+        };
 
         simpleHttpInvokerServiceExporter.setServiceInterface(clazz);
         simpleHttpInvokerServiceExporter.setService(service);
@@ -141,6 +155,8 @@ public class AppConfig {
 
     @Bean(destroyMethod = "close")
     DataSource dataSource(Environment env) {
+        return connectionProvider().unwrap(DataSource.class);
+/*
         HikariConfig dataSourceConfig = new HikariConfig();
         dataSourceConfig.setDriverClassName(env.getRequiredProperty("h2.jdbc.driver.classname"));
         dataSourceConfig.setJdbcUrl(env.getRequiredProperty("h2.db.url"));
@@ -148,13 +164,24 @@ public class AppConfig {
         dataSourceConfig.setPassword(env.getProperty("db.password"));
 
         return new HikariDataSource(dataSourceConfig);
+*/
+    }
+
+    @Bean(destroyMethod = "stop")
+    ConnectionProvider connectionProvider() {
+        HikariCPConnectionProvider connectionProvider = new HikariCPConnectionProvider();
+        connectionProvider.configure(org.hibernate.cfg.Environment.getProperties());
+        return connectionProvider;
     }
 
     @Bean(destroyMethod = "destroy")
-    LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource) {
+    LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource, MultiTenantConnectionProvider multiTenantConnectionProvider) {
         LocalContainerEntityManagerFactoryBean entityManagerFactoryBean = new LocalContainerEntityManagerFactoryBean();
         entityManagerFactoryBean.setDataSource(dataSource);
         entityManagerFactoryBean.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
+        Properties properties = new Properties();
+        properties.put(org.hibernate.cfg.Environment.MULTI_TENANT_CONNECTION_PROVIDER, multiTenantConnectionProvider);
+        entityManagerFactoryBean.setJpaProperties(properties);
         entityManagerFactoryBean.setPackagesToScan("com.epam.server.model");
 
         return entityManagerFactoryBean;

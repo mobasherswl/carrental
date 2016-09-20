@@ -2,14 +2,25 @@ package com.epam.client.conf;
 
 import com.epam.common.service.*;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+import org.springframework.core.env.Environment;
+import org.springframework.remoting.httpinvoker.HttpInvokerClientConfiguration;
 import org.springframework.remoting.httpinvoker.HttpInvokerProxyFactoryBean;
+import org.springframework.remoting.httpinvoker.SimpleHttpInvokerRequestExecutor;
+import org.springframework.remoting.support.RemoteInvocationResult;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+
+import static com.epam.common.constants.TenantConstants.TENANT_ID;
 import static org.modelmapper.config.Configuration.AccessLevel.PRIVATE;
 
 /**
@@ -32,6 +43,8 @@ public class AppConfig {
     private String rentCarServiceUrl;
     @Value("${server.rentalclass.url}")
     private String rentalClassServiceUrl;
+    @Autowired
+    Environment environment;
 
     @Bean
     public static PropertySourcesPlaceholderConfigurer properties() {
@@ -68,6 +81,13 @@ public class AppConfig {
 
         httpInvokerProxyFactoryBean.setServiceInterface(clazz);
         httpInvokerProxyFactoryBean.setServiceUrl(serviceUrl);
+        httpInvokerProxyFactoryBean.setHttpInvokerRequestExecutor( new SimpleHttpInvokerRequestExecutor() {
+            @Override
+            protected void prepareConnection(HttpURLConnection con, int contentLength) throws IOException {
+                super.prepareConnection(con, contentLength);
+                con.setRequestProperty(TENANT_ID, environment.getProperty(TENANT_ID));
+            }
+        });
 
         return httpInvokerProxyFactoryBean;
     }
